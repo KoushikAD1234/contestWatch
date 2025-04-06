@@ -1,0 +1,20 @@
+****   Issues need to be fixed.   ****
+
+1. On clicking on the buttion of the add to calender it is popping up as new 
+    window of goolge calender. But time and date is not parsing properly in the
+        google time reminder. Need to fix it. (Hard) (Resolved)
+
+2. Need to improve the CSS properly. (Easy) (Resolved)
+    a. Entire designing needs to be improved. (Resolved)
+    b. Need to differentiate between the platform contest. (Need to think before implementing)
+
+3. Need to add Atcoder platforms. (Medium) (Resolved)
+
+4. Need to add the time duration of the contest. (Easy) (Need to think later) (Less priority, probably not required).
+
+5. Need to add the link of the contest. (Medium) (Resolved)
+
+6. Make the time and date format same for all platforms. (Resolved)
+
+7. Need to sort the codeforces contest in ascending order by date, currently
+    it is in descending order by date. (Medium). (Resolved)

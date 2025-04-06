@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "ContestWatch",
+  "version": "1.0",
+  "description": "Track upcoming CP contests and add them to Google Calendar.",
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "logo.png",
+      "48": "logo.png",
+      "128": "logo.png"
+    }
+  },
+  "permissions": ["storage"],
+  "host_permissions": ["http://localhost:5000/"],
+  "icons": {
+    "16": "logo.png",
+    "48": "logo.png",
+    "128": "logo.png"
+  }
+}

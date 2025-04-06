@@ -6,7 +6,7 @@ function App() {
 
     useEffect(() => {
         axios
-            .get("http://localhost:5000/contests")
+            .get("https://contestwatch.onrender.com/contests")
             .then((response) => setContests(response.data))
             .catch((error) => console.error("Error fetching contests:", error));
     }, []);

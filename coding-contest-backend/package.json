@@ -17,6 +17,7 @@
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "googleapis": "^148.0.0",
+    "node-cache": "^5.1.2",
     "tailwindcss": "^4.1.3"
   }
 }

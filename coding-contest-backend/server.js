@@ -2,53 +2,58 @@ const express = require("express");
 const axios = require("axios");
 const cheerio = require("cheerio");
 const cors = require("cors");
+const NodeCache = require("node-cache");
 require("dotenv").config();
 
 const app = express();
+const PORT = process.env.PORT || 5000;
+
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 5000;
+// In-memory cache (10 minutes TTL)
+const cache = new NodeCache({ stdTTL: 600 }); // 500 seconds
 
-// Fetch contests from Codeforces
 const fetchCodeforcesContests = async () => {
-    try {
-        const response = await axios.get("https://codeforces.com/api/contest.list");
-        const upcoming = response.data.result
-            .filter(contest => contest.phase === "BEFORE")
-            .sort((a, b) => a.startTimeSeconds - b.startTimeSeconds); // ascending order
-
-        const contests = upcoming.map(contest => ({
-            ...contest,
-            link: `https://codeforces.com/contests/${contest.id}`,
-        }));
-
-        return contests;
-    } catch (error) {
-        console.error("Error fetching Codeforces contests:", error);
-        return [];
-    }
+  try {
+    const { data } = await axios.get("https://codeforces.com/api/contest.list");
+    return data.result
+      .filter((contest) => contest.phase === "BEFORE")
+      .sort((a, b) => a.startTimeSeconds - b.startTimeSeconds)
+      .map((contest) => ({
+        name: contest.name,
+        startTimeSeconds: contest.startTimeSeconds,
+        durationSeconds: contest.durationSeconds,
+        link: `https://codeforces.com/contest/${contest.id}`,
+        platform: "Codeforces",
+      }));
+  } catch (error) {
+    console.error("❌ Codeforces error:", error.message);
+    return [];
+  }
 };
 
-// Fetch contests from CodeChef (Scraping required)
 const fetchCodeChefContests = async () => {
-    try {
-        const response = await axios.get("https://www.codechef.com/api/list/contests/all");
-        console.log("CodeChef response received ", response.data);
-        
-        const contests = response.data.future_contests.map(contest => ({
-            ...contest,
-            link: `https://www.codechef.com/${contest.contest_code}`,
-        }));
-
-        return contests;
-    } catch (error) {
-        console.error("Error fetching CodeChef contests:", error);
-        return [];
-    }
+  try {
+    const { data } = await axios.get(
+      "https://www.codechef.com/api/list/contests/all"
+    );
+    return data.future_contests.map((contest) => ({
+      name: contest.contest_name,
+      startTime: contest.start_date_iso,
+      endTime: contest.end_date_iso,
+      durationSeconds:
+        (new Date(contest.end_date_iso) - new Date(contest.start_date_iso)) /
+        1000,
+      link: `https://www.codechef.com/${contest.contest_code}`,
+      platform: "CodeChef",
+    }));
+  } catch (error) {
+    console.error("❌ CodeChef error:", error.message);
+    return [];
+  }
 };
 
-// Fetch contests from AtCoder (Scraping required)
 const fetchAtCoderContests = async () => {
     try {
         const response = await axios.get("https://atcoder.jp/contests/");
@@ -101,13 +106,37 @@ const fetchAtCoderContests = async () => {
     }
 };
 
-// API endpoint to fetch all contests
 app.get("/contests", async (req, res) => {
-    const codeforces = await fetchCodeforcesContests();
-    const codechef = await fetchCodeChefContests();
-    const atcoder = await fetchAtCoderContests();
-    
-    res.json([...codeforces, ...codechef, ...atcoder]);
+  const cached = cache.get("allContests");
+  if (cached) {
+    return res.json(cached);
+  }
+
+  try {
+    const [codeforces, codechef, atcoder] = await Promise.all([
+      fetchCodeforcesContests(),
+      fetchCodeChefContests(),
+      fetchAtCoderContests(),
+    ]);
+
+    const all = [...codeforces, ...codechef, ...atcoder].sort((a, b) => {
+      const aTime = a.startTime || a.startTimeSeconds * 1000;
+      const bTime = b.startTime || b.startTimeSeconds * 1000;
+      return new Date(aTime) - new Date(bTime);
+    });
+
+    cache.set("allContests", all); // Cache results for 5 min
+    res.json(all);
+  } catch (err) {
+    console.error("❌ Aggregation error:", err.message);
+    res.status(500).json({ error: "Failed to fetch contests" });
+  }
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+app.get("/", (req, res) => res.send("🚀 Contest Aggregator API is live!"));
+
+
+app.listen(PORT, () => {
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+});
